@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Strangers AI Photo Enhancer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:'Orbitron',sans-serif;
+  display:flex;justify-content:center;align-items:flex-start;
+  padding:10px 0 20px 0;
+  min-height:100vh;
+  background:url('https://tse1.mm.bing.net/th/id/OIP.AOyrPdm0Qw5-M5g_Bua0IQHaFE?rs=1&pid=ImgDetMain&o=7&rm=3') no-repeat center center fixed;
+  background-size:cover;
+  color:#fff;
+  overflow-x:hidden;
+}
+body::before{
+  content:"";position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:-1;
+}
+
+/* Card */
+.card{
+  position:relative;width:90%;max-width:420px;padding:5vw;
+  background:linear-gradient(180deg,#070707,#120000);
+  border-radius:26px;
+  box-shadow:0 0 60px rgba(255,0,0,0.6);
+  text-align:center;
+  margin-bottom:40px;
+  overflow:hidden;
+  animation:appear 1.2s ease,breathe 4s ease-in-out infinite;
+}
+@keyframes appear{from{opacity:0;transform:scale(0.92)}to{opacity:1;transform:scale(1)}}
+@keyframes breathe{0%{scale:1}25%{scale:1.02}50%{scale:1}75%{scale:0.98}100%{scale:1}}
+
+h1{
+  font-family:'Bebas Neue',cursive;
+  font-size:8vw;color:#ff1b1b;
+  letter-spacing:6px;
+  text-shadow:0 0 20px red,0 0 40px darkred;
+  animation:pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{text-shadow:0 0 20px red,0 0 40px darkred;}50%{text-shadow:0 0 35px #ff5555,0 0 60px #ff0000;}}
+
+.subtitle{font-size:3.5vw;letter-spacing:3px;opacity:0.85;margin-top:6px;animation:shimmer 3s infinite;}
+@keyframes shimmer{0%{opacity:0.7}50%{opacity:1}100%{opacity:0.7}}
+
+.credit{margin-top:8px;font-size:3vw;letter-spacing:2px;color:#ff6b6b;}
+input{width:100%;margin-top:5vw;padding:3vw;border-radius:10px;border:none;background:#000;color:#fff;cursor:pointer;}
+button{width:100%;margin-top:4vw;padding:4vw;border:none;border-radius:14px;background:linear-gradient(90deg,#ff0000,#5c0000);color:white;font-size:4vw;letter-spacing:2px;cursor:pointer;box-shadow:0 0 30px red;transition:transform 0.2s,box-shadow 0.3s;}
+button:hover{transform:scale(1.06);box-shadow:0 0 50px #ff3333;}
+
+/* Side-by-side container */
+.canvas-wrapper{
+  position:relative;
+  width:100%;
+  padding-top:75%; /* Maintain aspect ratio */
+  margin-top:4vw;
+  display:none;
+  border-radius:16px;
+  overflow:hidden;
+}
+canvas{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+}
+.slider-handle{
+  position:absolute;top:0;left:50%;
+  width:4px;height:100%;
+  background:red;
+  cursor:ew-resize;
+  z-index:10;
+  transform:translateX(-50%);
+  box-shadow:0 0 20px #ff0000,0 0 50px #ff5555;
+  animation:glow 2s infinite alternate;
+}
+@keyframes glow{0%{box-shadow:0 0 20px #ff0000,0 0 50px #ff5555;}100%{box-shadow:0 0 30px #ff4444,0 0 70px #ff7777;}}
+
+#sliderInstruction {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.6);
+  color: #ff1b1b;
+  font-size: 3.5vw;
+  padding: 0.8vw 2vw;
+  border-radius: 10px;
+  text-align: center;
+  z-index: 15;
+  opacity: 0;
+  pointer-events: none;
+  animation: slideFade 5s forwards;
+}
+@keyframes slideFade {
+  0% { opacity: 0; transform: translateX(-50%) translateY(-20px);}
+  10% { opacity: 1; transform: translateX(-50%) translateY(0);}
+  80% { opacity: 1; transform: translateX(-50%) translateY(0);}
+  100% { opacity: 0; transform: translateX(-50%) translateY(-20px);}
+}
+
+/* Particles */
+.particle{
+  position:absolute;width:2vw;height:2vw;background:red;border-radius:50%;
+  opacity:0.6;
+  animation:moveParticle 8s linear infinite;
+}
+@keyframes moveParticle{0%{transform:translate(0,0) rotate(0deg);}50%{transform:translate(50vw,50vh) rotate(180deg);}100%{transform:translate(-50vw,-50vh) rotate(360deg);}}
+
+/* Loading overlay */
+#loadingOverlay{
+  position:fixed;inset:0;background:radial-gradient(circle at center,#000 0%,#320000 100%);
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  z-index:9999;color:#ff1b1b;font-family:'Bebas Neue',cursive;font-size:8vw;letter-spacing:4px;text-align:center;text-shadow:0 0 20px red,0 0 40px darkred;
+  opacity:0;pointer-events:none;
+}
+#loadingOverlay.show{opacity:1;pointer-events:all;animation:fadeIn 0.3s forwards;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+
+.loader-line{
+  width:20vw;height:2vw;background:red;margin:0.8vw 0;animation:flickerLine 1s infinite alternate;border-radius:1vw;
+}
+.loader-line:nth-child(2){animation-delay:0.2s;}
+.loader-line:nth-child(3){animation-delay:0.4s;}
+.loader-line:nth-child(4){animation-delay:0.6s;}
+.loader-line:nth-child(5){animation-delay:0.8s;}
+.loader-line:nth-child(6){animation-delay:1s;}
+.loader-line:nth-child(7){animation-delay:1.2s;}
+.loader-line:nth-child(8){animation-delay:1.4s;}
+.loader-line:nth-child(9){animation-delay:1.6s;}
+.loader-line:nth-child(10){animation-delay:1.8s;}
+
+@keyframes flickerLine{0%{opacity:0.3;transform:scaleX(0.8);}50%{opacity:1;transform:scaleX(1.2);}100%{opacity:0.3;transform:scaleX(0.8);}}
+
+.glitch{position:relative;color:#ff1b1b;font-size:8vw;font-weight:bold;animation:glitchAnim 2s infinite;}
+.glitch::before,.glitch::after{content:"STRANGERS AI EDITING...";position:absolute;left:0;}
+.glitch::before{animation:glitchAnimBefore 2s infinite;color:#ff5555;clip-path:inset(0 0 50% 0);}
+.glitch::after{animation:glitchAnimAfter 2s infinite;color:#ff0000;clip-path:inset(50% 0 0 0);}
+@keyframes glitchAnim{0%,100%{transform:translate(0);}20%{transform:translate(-2px,2px);}40%{transform:translate(2px,-2px);}60%{transform:translate(-2px,-2px);}80%{transform:translate(2px,2px);}}
+@keyframes glitchAnimBefore{0%,100%{transform:translate(0,0);}25%{transform:translate(-2px,2px);}50%{transform:translate(2px,-2px);}75%{transform:translate(-1px,-1px);}}
+@keyframes glitchAnimAfter{0%,100%{transform:translate(0,0);}25%{transform:translate(1px,-1px);}50%{transform:translate(-2px,2px);}75%{transform:translate(2px,1px);}}
+
+/* Responsive */
+@media(max-width:400px){
+  h1{font-size:10vw;}
+  .subtitle{font-size:4vw;}
+  .credit{font-size:3vw;}
+  button{font-size:5vw;padding:4vw;}
+  .glitch{font-size:10vw;}
+  .loader-line{width:25vw;height:3vw;}
+  .slider-handle{width:5px;}
+  #sliderInstruction{font-size:4vw;}
+}
+</style>
+</head>
+<body>
+
+<div id="loadingOverlay">
+  <div class="glitch">STRANGERS AI EDITING...</div>
+  <div class="loader-line"></div>
+  <div class="loader-line"></div>
+  <div class="loader-line"></div>
+  <div class="loader-line"></div>
+  <div class="loader-line"></div>
+  <div class="loader-line"></div>
+  <div class="loader-line"></div>
+  <div class="loader-line"></div>
+  <div class="loader-line"></div>
+</div>
+
+<div class="card" id="mainCard">
+  <h1>STRANGERS AI</h1>
+  <div class="subtitle">PHOTO ENHANCER</div>
+  <div class="credit">Developed by Swapnil</div>
+
+  <input type="file" id="photo" accept="image/*">
+  
+  <div class="canvas-wrapper" id="canvasContainer">
+    <canvas id="originalCanvas"></canvas>
+    <canvas id="enhancedCanvas"></canvas>
+    <div class="slider-handle" id="slider"></div>
+    <div id="sliderInstruction">Drag the red line to compare</div>
+  </div>
+
+  <button id="downloadBtn" style="display:none;">Download Enhanced Image</button>
+  <button id="resetBtn" style="display:none;">Reset</button>
+  <div class="footer">© 2026 Swapnil • All Rights Reserved</div>
+</div>
+
+<script>
+const photo=document.getElementById("photo");
+const originalCanvas=document.getElementById("originalCanvas");
+const enhancedCanvas=document.getElementById("enhancedCanvas");
+const canvasContainer=document.getElementById("canvasContainer");
+const downloadBtn=document.getElementById("downloadBtn");
+const resetBtn=document.getElementById("resetBtn");
+const slider=document.getElementById("slider");
+const loadingOverlay=document.getElementById("loadingOverlay");
+const sliderInstruction=document.getElementById("sliderInstruction");
+
+let isDragging=false;
+let loadingShown=false;
+
+function clamp(v){return Math.max(0,Math.min(255,v));}
+
+function enhanceImage(img){
+  const w=img.naturalWidth,h=img.naturalHeight;
+  canvasContainer.style.paddingTop=(h/w*100)+'%';
+  originalCanvas.width=w; enhancedCanvas.width=w;
+  originalCanvas.height=h; enhancedCanvas.height=h;
+  
+  const ctxO=originalCanvas.getContext("2d"); ctxO.drawImage(img,0,0);
+  const ctx=enhancedCanvas.getContext("2d"); ctx.drawImage(img,0,0);
+
+  let data=ctx.getImageData(0,0,w,h);
+  let d=data.data;
+
+  // Dynamic AI-like enhancements
+  let avgBrightness=0;
+  for(let i=0;i<d.length;i+=4) avgBrightness+=(d[i]+d[i+1]+d[i+2])/3;
+  avgBrightness/=d.length/4;
+
+  const brightness=1+(128-avgBrightness)/256*0.2;
+  const contrast=1.1, saturation=1.08, gamma=1.03;
+  const highlightBoost=10, shadowBoost=8, blackPoint=5;
+  const vignetteStrength=0.12;
+
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      let i=(y*w+x)*4;
+      d[i]=clamp((d[i]*brightness-128)*contrast+128);
+      d[i+1]=clamp((d[i+1]*brightness-128)*contrast+128);
+      d[i+2]=clamp((d[i+2]*brightness-128)*contrast+128);
+
+      let gray=0.3*d[i]+0.59*d[i+1]+0.11*d[i+2];
+      d[i]=clamp(gray+(d[i]-gray)*saturation);
+      d[i+1]=clamp(gray+(d[i+1]-gray)*saturation);
+      d[i+2]=clamp(gray+(d[i+2]-gray)*saturation);
+
+      d[i]=clamp(255*Math.pow(d[i]/255,gamma));
+      d[i+1]=clamp(255*Math.pow(d[i+1]/255,gamma));
+      d[i+2]=clamp(255*Math.pow(d[i+2]/255,gamma));
+
+      if(d[i]>200)d[i]=Math.min(255,d[i]+highlightBoost);
+      if(d[i+1]>200)d[i+1]=Math.min(255,d[i+1]+highlightBoost);
+      if(d[i+2]>200)d[i+2]=Math.min(255,d[i+2]+highlightBoost);
+
+      if(d[i]<50)d[i]=Math.min(255,d[i]+shadowBoost);
+      if(d[i+1]<50)d[i+1]=Math.min(255,d[i+1]+shadowBoost);
+      if(d[i+2]<50)d[i+2]=Math.min(255,d[i+2]+shadowBoost);
+
+      if(d[i]<20)d[i]=Math.max(0,d[i]-blackPoint);
+      if(d[i+1]<20)d[i+1]=Math.max(0,d[i+1]-blackPoint);
+      if(d[i+2]<20)d[i+2]=Math.max(0,d[i+2]-blackPoint);
+
+      // Vignette
+      let dx=x-w/2,dy=y-h/2;
+      let dist=Math.sqrt(dx*dx+dy*dy);
+      let maxDist=Math.sqrt((w/2)**2+(h/2)**2);
+      let v=1-vignetteStrength*(dist/maxDist);
+      d[i]*=v;d[i+1]*=v;d[i+2]*=v;
+    }
+  }
+
+  ctx.putImageData(data,0,0);
+
+  // Sharpen
+  const copy=new Uint8ClampedArray(data.data);
+  const sharpenKernel=[0,-1,0,-1,5,-1,0,-1,0];
+  for(let y=1;y<h-1;y++){
+    for(let x=1;x<w-1;x++){
+      for(let c=0;c<3;c++){
+        let i=(y*w+x)*4+c;
+        let val=0;
+        val+=copy[i-w*4-4]*sharpenKernel[0];
+        val+=copy[i-w*4]*sharpenKernel[1];
+        val+=copy[i-w*4+4]*sharpenKernel[2];
+        val+=copy[i-4]*sharpenKernel[3];
+        val+=copy[i]*sharpenKernel[4];
+        val+=copy[i+4]*sharpenKernel[5];
+        val+=copy[i+w*4-4]*sharpenKernel[6];
+        val+=copy[i+w*4]*sharpenKernel[7];
+        val+=copy[i+w*4+4]*sharpenKernel[8];
+        data.data[i]=clamp(val);
+      }
+    }
+  }
+  ctx.putImageData(data,0,0);
+
+  canvasContainer.style.display="block";
+  enhancedCanvas.style.clip=`rect(0px, ${w/2}px, ${h}px, 0px)`;
+  slider.style.left=`50%`;
+  sliderInstruction.style.opacity=1; // instruction will fade via CSS
+}
+
+// Upload
+photo.addEventListener("change", ()=>{
+  const file=photo.files[0];if(!file)return;
+  if(!loadingShown){loadingOverlay.classList.add("show"); loadingShown=true;}
+
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const tempImg=new Image();
+    tempImg.onload=function(){
+      setTimeout(()=>{
+        enhanceImage(tempImg);
+        downloadBtn.style.display="block";
+        resetBtn.style.display="block";
+        loadingOverlay.classList.remove("show");
+      },5000);
+    }
+    tempImg.src=e.target.result;
+  }
+  reader.readAsDataURL(file);
+});
+
+// Slider drag
+slider.onpointerdown=()=>{isDragging=true;}
+window.onpointerup=()=>{isDragging=false;}
+window.onpointermove=(e)=>{
+  if(!isDragging) return;
+  const rect=canvasContainer.getBoundingClientRect();
+  let x=e.clientX-rect.left;
+  if(x<0)x=0; if(x>rect.width)x=rect.width;
+  const w=enhancedCanvas.width;
+  const ratio = x/rect.width;
+  enhancedCanvas.style.clip=`rect(0px, ${w*ratio}px, ${enhancedCanvas.height}px, 0px)`;
+  slider.style.left = `${ratio*100}%`;
+}
+
+// Download
+downloadBtn.addEventListener("click",()=>{
+  const link=document.createElement("a");
+  link.download="enhanced.png";
+  link.href=enhancedCanvas.toDataURL();
+  link.click();
+});
+
+// Reset
+resetBtn.addEventListener("click",()=>{
+  canvasContainer.style.display="none";
+  downloadBtn.style.display="none";
+  resetBtn.style.display="none";
+  photo.value="";
+});
+</script>
+
+</body>
+</html>
