@@ -2,4 +2,4 @@
 
 An early **AI photo enhancer** experiment (static HTML page).
 
-Experiment repo — see [AIphotoenhancer-](https://github.com/thiteswapnil1212-hue/AIphotoenhancer-) for the deployed version.
+Static single-page demo — open `index.html` in a browser to try it.
